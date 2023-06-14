@@ -1,72 +1,44 @@
-#!/usr/bin/env python
-
-import rospy
-import numpy as np
-from states_new import IcuasStatesNew
-from ball_release import ReleasePosition, MoveToTarget, ReleaseCallback
-from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import Bool
-from std_msgs.msg import Float32
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Twist
 import math
 
-def main():
-    intersection = None
-    pub = rospy.Publisher('move_base_simple/goal', PoseStamped, queue_size=0.1)
-    pub_topp = rospy.Publisher('red/tracker/input_pose', PoseStamped, queue_size=0.1)
-    pub_kill = rospy.Publisher("/red/kill_traj_planner", Bool, queue_size=0.1, latch=True)
-    pub_release = rospy.Publisher('red/uav_magnet/gain', Float32, queue_size=1)
-    pub_nn = rospy.Publisher("", Bool, queue_size=10)
-    loop = 0
-    pose = PoseStamped()
 
-    while loop == 0: # First loop
-        if cbr_states.return_objects('is_running') == True:
-            pub_pose_stamped(7,0,3, 0,0,0,1, 'move_base_simple/goal')
+class move(Node):
 
-            print("Loop = 1")
+    def __init__(self):
+        super().__init__('move')
+        self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.timer_ = self.create_timer(1.0, self.timer_callback)
+        self.linear_speed_ = 0.2
+        self.angular_speed_ = 0.5
+        self.direction_ = 1
+        self.count_ = 0
 
-            loop = 1
+    def timer_callback(self):
+        msg = Twist()
 
-    while loop == 1: # Stop ego-planner 
-        if icuas_states.return_objects('position')[0] > 6.9:
-            print("Loop = 2")
-            pub_kill.publish(True) 
-            loop = 2 
+        if self.count_ < 5:
+            msg.linear.x = self.linear_speed_
+            msg.angular.z = 0.0
+        elif self.count_ >= 5 and self.count_ < 10:
+            msg.linear.x = 0.0
+            msg.angular.z = self.direction_ * self.angular_speed_
+        else:
+            self.count_ = 0
+            self.direction_ = -self.direction_
+
+        self.publisher_.publish(msg)
+        self.count_ += 1
 
 
-def pub_pose_stamped(x,y,z, q_x,q_y,q_z,q_w, topic):
+def main(args=None):
+    rclpy.init(args=args)
+    move_node = move()
+    rclpy.spin(zigzag_node)
+    move_node.destroy_node()
+    rclpy.shutdown()
 
-    pub = rospy.Publisher('move_base_simple/goal', PoseStamped, queue_size=0.1)
-    pub_topp = rospy.Publisher('red/tracker/input_pose', PoseStamped, queue_size=0.1)
-
-    pose = PoseStamped()
-
-    pose.pose.position.x = x
-    pose.pose.position.y = y
-    pose.pose.position.z = z
-    
-    pose.pose.orientation.x = q_x
-    pose.pose.orientation.y = q_y
-    pose.pose.orientation.z = q_z
-    pose.pose.orientation.w = q_w
-
-    if topic == 'move_base_simple/goal':
-        pub.publish(pose)
-    elif topic == 'red/tracker/input_pose':
-        pub_topp.publish(pose)
-    else:
-        pub.publish(pose)
-        pub_topp.publish(pose)
-
-def publish_nn(value):
-    pub_nn = rospy.Publisher("", Bool, queue_size=10)
-
-    pub_nn.publish(value)
 
 if __name__ == '__main__':
-    try:
-        cbr_states = CBRStatesNew()
-        main()
-    except rospy.ROSInterruptException:
-        pass
+    main()
