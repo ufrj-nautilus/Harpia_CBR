@@ -10,13 +10,14 @@ class move(Node):
         super().__init__('move')
         self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10)
         self.timer_ = self.create_timer(1.0, self.timer_callback)
-        self.linear_speed_ = 0.2
-        self.angular_speed_ = 0.5
+        self.linear_speed_ = 0 # ajustar valores
+        self.angular_speed_ = 0 # ajustar valores
         self.direction_ = 1
-        self.count_ = 0
+        self.count_ = 1
 
     def timer_callback(self):
         msg = Twist()
+        msg.linear.z = 2.0
 
         if self.count_ < 5:
             msg.linear.x = self.linear_speed_
@@ -31,13 +32,16 @@ class move(Node):
         self.publisher_.publish(msg)
         self.count_ += 1
 
+class identifier ()
+    def __init__(self):
+        self.publisher_ =
 
-def main(args=None):
-    rclpy.init(args=args)
-    move_node = move()
-    rclpy.spin(zigzag_node)
-    move_node.destroy_node()
-    rclpy.shutdown()
+    def main(args=None):
+        rclpy.init(args=args)
+        move_node = move()
+        rclpy.spin(zigzag_node)
+        move_node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
