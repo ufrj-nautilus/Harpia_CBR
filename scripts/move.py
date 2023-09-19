@@ -1,19 +1,36 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from mavros_msgs.msg import OverrideRCIn
+from mavros_msgs.srv import CommandBool, SetMode
+from std_msgs.msg import Empty
 import math
 
 
 class move(Node):
 
-    def __init__(self):
-        super().__init__('move')
-        self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10)
-        self.timer_ = self.create_timer(1.0, self.timer_callback)
-        self.linear_speed_ = 0.2
-        self.angular_speed_ = 0.5
-        self.direction_ = 1
-        self.count_ = 0
+   def __init__(self):
+        super().__init__('drone_controller')
+        self.publisher_cmd_vel = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.publisher_rc_override = self.create_publisher(
+            OverrideRCIn, '/mavros/rc/override', 10)
+        self.arm_service = rospy.ServiceProxy(
+            '/mavros/cmd/arming', CommandBool)
+        self.set_mode_service = rospy.ServiceProxy('/mavros/set_mode', SetMode)
+        self.takeoff_publisher = self.create_publisher(Empty, 'takeoff', 10)
+        self.linear_speed = 0.2
+        self.angular_speed = 0.5
+        self.direction = 1
+        self.count = 0
+
+    def arm_drone(self):
+        rospy.wait_for_service('/mavros/cmd/arming')
+        try:
+            self.arm_service(True)
+        except rospy.ServiceException as e:
+            rospy.logerr("Failed to arm the drone: %s" % e)
+
+    def heigth():
 
     def timer_callback(self):
         msg = Twist()
